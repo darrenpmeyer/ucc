@@ -1,0 +1,22 @@
+# Maintainer: Darren P Meyer <6667118+darrenpmeyer@users.noreply.github.com>
+pkgname=ucc-bin
+pkgver=@VERSION@
+pkgrel=1
+pkgdesc='Emit Unicode characters by name, codepoint, or alias (prebuilt)'
+arch=('x86_64' 'aarch64')
+url='https://github.com/darrenpmeyer/ucc'
+license=('MIT' 'Unicode-3.0')
+depends=('gcc-libs' 'glibc')
+provides=("ucc=$pkgver")
+conflicts=('ucc')
+options=('!strip')
+source_x86_64=("$url/releases/download/v$pkgver/ucc-$pkgver-linux-x86_64.tar.gz")
+source_aarch64=("$url/releases/download/v$pkgver/ucc-$pkgver-linux-aarch64.tar.gz")
+sha256sums_x86_64=('@X86_64_SHA256@')
+sha256sums_aarch64=('@AARCH64_SHA256@')
+
+package() {
+    cp -a --no-preserve=ownership "ucc-$pkgver-linux-$CARCH/usr" "$pkgdir/"
+    install -Dm644 "$pkgdir/usr/share/doc/ucc/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+    install -Dm644 "$pkgdir/usr/share/doc/ucc/LICENSE-UNICODE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE-UNICODE"
+}

@@ -8,6 +8,7 @@ DATADIR ?= $(PREFIX)/share/ucc
 # The runtime path excludes DESTDIR, which is only a packaging staging root.
 UCC_DATADIR := $(DATADIR)
 export UCC_DATADIR
+DOCDIR ?= $(PREFIX)/share/doc/ucc
 DESTDIR ?=
 CARGO_TARGET_DIR ?= target
 export CARGO_TARGET_DIR
@@ -38,12 +39,16 @@ check:
 	$(MAKE) test
 
 install:
-	install -d "$(DESTDIR)$(BINDIR)" "$(DESTDIR)$(DATADIR)"
+	install -d "$(DESTDIR)$(BINDIR)" "$(DESTDIR)$(DATADIR)" "$(DESTDIR)$(DOCDIR)"
 	install -m 755 "$(CARGO_TARGET_DIR)/release/ucc" "$(DESTDIR)$(BINDIR)/ucc"
 	install -m 644 printable.csv "$(DESTDIR)$(DATADIR)/printable.csv"
+	install -m 644 README.md LICENSE LICENSE-UNICODE NOTICE DATA-PROVENANCE.md "$(DESTDIR)$(DOCDIR)/"
 
 uninstall:
 	rm -f "$(DESTDIR)$(BINDIR)/ucc" "$(DESTDIR)$(DATADIR)/printable.csv"
+	rm -f "$(DESTDIR)$(DOCDIR)/README.md" "$(DESTDIR)$(DOCDIR)/LICENSE" \
+	  "$(DESTDIR)$(DOCDIR)/LICENSE-UNICODE" "$(DESTDIR)$(DOCDIR)/NOTICE" \
+	  "$(DESTDIR)$(DOCDIR)/DATA-PROVENANCE.md"
 
 clean:
 	$(CARGO) clean

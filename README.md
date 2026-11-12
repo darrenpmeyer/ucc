@@ -7,6 +7,49 @@ name, codepoint, or alias.
 printf 'H%sO\n' "$(ucc 'SUBSCRIPT TWO')"   # H₂O
 ```
 
+## Release downloads
+
+Download packages from [GitHub Releases](https://github.com/darrenpmeyer/ucc/releases).
+Linux x86-64 (`amd64`) and ARM64 (`aarch64`, Debian `arm64`) are supported.
+ARM64 needs a 64-bit OS; 32-bit Raspberry Pi OS is not supported by these builds.
+Packages target glibc 2.35 or newer, including Debian 12+ and Ubuntu 22.04+.
+Private repository downloads require GitHub access.
+
+Verify downloads with `sha256sum --check SHA256SUMS` (download all assets listed,
+or select the lines for your downloaded files). On Debian/Ubuntu:
+
+```sh
+sudo apt install ./ucc_0.9.0-1_amd64.deb  # use arm64 on ARM64
+sudo apt remove ucc                     # uninstall
+```
+
+Binary archives contain a filesystem tree under `usr/`, with the map path compiled
+as `/usr/share/ucc`. Extract the matching archive, then install its contents:
+
+```sh
+tar -xzf ucc-0.9.0-linux-x86_64.tar.gz
+sudo cp -a ucc-0.9.0-linux-x86_64/usr/. /usr/
+ucc 'EM DASH'
+```
+
+To remove a manually installed archive, remove `/usr/bin/ucc`,
+`/usr/share/ucc/printable.csv`, and `/usr/share/doc/ucc/`. Prefer the `.deb` or
+Arch packaging when available so your package manager tracks these files.
+
+The `ucc-<version>-aur.tar.gz` release asset contains separate `ucc` and `ucc-bin`
+recipes with `.SRCINFO`. Extract it, enter one recipe directory, and run
+`makepkg -si`. The source recipe compiles locally; the binary recipe downloads
+this release's matching architecture. Both install `ucc` and cannot coexist.
+These are prepared recipes, not automatic submissions to AUR. Public AUR use
+requires public release downloads.
+
+## License and character data
+
+The project code is [MIT licensed](LICENSE). The generated Unicode character map
+is covered by [Unicode License V3](LICENSE-UNICODE); see [NOTICE](NOTICE) and
+[data provenance](DATA-PROVENANCE.md). Binary packages also include dependency
+license notices under `/usr/share/doc/ucc/third-party/`.
+
 ## Build and install
 
 Requires Rust and Cargo (edition 2024).
@@ -174,7 +217,7 @@ Run checks with `cargo test` and `python3 -m unittest discover -s tests`.
 
 ## Extract printable character definitions
 
-The printable char database can be regenerated from the [full Unicode definition XML file](https://www.unicode.org/Public/UCD/latest/ucdxml/). Extract the `ucd.all.flat.xml` to the repo directory and run:
+The printable char database can be regenerated from the [versioned Unicode definition XML archive](https://www.unicode.org/Public/18.0.0/ucdxml/). Extract the `ucd.all.flat.xml` to the repo directory and run:
 
 ```sh
 python3 extract_printable.py ucd.all.flat.xml printable.csv
@@ -194,3 +237,19 @@ Unicode version. Combining marks are included; printability does not guarantee a
 visible standalone glyph or font support.
 
 
+
+## Maintainer release process
+
+`.github/workflows/release.yml` builds and tests x86-64 and ARM64 natively in
+Ubuntu 22.04 containers, packages `.deb` files and binary archives, tests Debian
+and Ubuntu installations, and assembles source and AUR recipe archives plus
+checksums. Branch/PR/manual runs upload Actions artifacts without publishing.
+A `v<version>` tag must match `Cargo.toml`; after all checks pass, its run creates
+a draft GitHub Release, uploads all assets, then publishes it.
+
+For a release, update the manifest, lockfile, examples and release notes, commit,
+and push the commit and its version tag (for example `v0.9.0`). GitHub Actions
+needs repository write permission for the release job. Releases stay subject to
+the repository's visibility. The workflow does not change visibility or submit
+to AUR/APT repositories. Use the generated AUR recipes after assets are final;
+do not replace published archives without updating their checksums.

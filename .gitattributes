@@ -1,0 +1,2 @@
+.github export-ignore
+tests/__pycache__ export-ignore

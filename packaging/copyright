@@ -1,0 +1,19 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: ucc
+Source: https://github.com/darrenpmeyer/ucc
+
+Files: *
+Copyright: 2026 Darren P Meyer
+License: MIT
+ See /usr/share/doc/ucc/LICENSE for the full license text.
+
+Files: usr/share/ucc/printable.csv
+Copyright: 1991-2026 Unicode, Inc.
+License: Unicode-3.0
+ See /usr/share/doc/ucc/LICENSE-UNICODE for the full license text.
+
+Files: usr/bin/ucc
+Copyright: 2026 Darren P Meyer and Rust dependency authors
+License: MIT and other-permissive
+ Dependency-specific metadata and license texts are installed in
+ /usr/share/doc/ucc/third-party/.

@@ -1,0 +1,41 @@
+# Maintainer: Darren P Meyer <6667118+darrenpmeyer@users.noreply.github.com>
+pkgname=ucc
+pkgver=@VERSION@
+pkgrel=1
+pkgdesc='Emit Unicode characters by name, codepoint, or alias'
+arch=('x86_64' 'aarch64')
+url='https://github.com/darrenpmeyer/ucc'
+license=('MIT' 'Unicode-3.0')
+depends=('gcc-libs' 'glibc')
+makedepends=('cargo' 'make' 'python')
+source=("$pkgname-$pkgver.tar.gz::$url/releases/download/v$pkgver/ucc-$pkgver-source.tar.gz")
+sha256sums=('@SOURCE_SHA256@')
+
+prepare() {
+    cd "ucc-$pkgver"
+    export RUSTUP_TOOLCHAIN=stable
+    cargo fetch --locked
+}
+
+build() {
+    cd "ucc-$pkgver"
+    export RUSTUP_TOOLCHAIN=stable
+    export CARGO_TARGET_DIR=target
+    UCC_DATADIR=/usr/share/ucc cargo build --release --frozen
+}
+
+check() {
+    cd "ucc-$pkgver"
+    export RUSTUP_TOOLCHAIN=stable
+    export CARGO_TARGET_DIR=target
+    UCC_DATADIR=/usr/share/ucc cargo test --frozen
+    python -m unittest discover -s tests
+}
+
+package() {
+    cd "ucc-$pkgver"
+    make install PREFIX=/usr DESTDIR="$pkgdir" CARGO_TARGET_DIR=target
+    python packaging/build.py --notices-only "$pkgdir/usr/share/doc/ucc/third-party"
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+    install -Dm644 LICENSE-UNICODE "$pkgdir/usr/share/licenses/$pkgname/LICENSE-UNICODE"
+}

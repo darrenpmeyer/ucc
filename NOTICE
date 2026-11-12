@@ -1,0 +1,11 @@
+ucc is Copyright (c) 2026 Darren P Meyer and licensed under the MIT License;
+see LICENSE.
+
+printable.csv is derived from Unicode Character Database data.
+Copyright © 1991-2026 Unicode, Inc. Distributed under Unicode License V3;
+see LICENSE-UNICODE. This data is licensed separately from ucc's source code.
+See DATA-PROVENANCE.md for input identity and generation instructions.
+
+Release binaries include Rust dependencies. Their license texts and metadata
+are included under third-party/ in binary archives and under
+/usr/share/doc/ucc/third-party/ in Debian packages and ucc-bin installations.

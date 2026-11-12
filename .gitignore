@@ -8,3 +8,10 @@ CLAUDE.md
 /target/
 
 ucd.*.xml
+
+!.github/
+!.github/**
+!.SRCINFO
+/dist/
+__pycache__/
+!.gitattributes

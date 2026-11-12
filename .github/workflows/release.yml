@@ -1,0 +1,159 @@
+name: Build and release
+
+on:
+  push:
+    branches: [main, release-0.9.0]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: x86_64
+          - runner: ubuntu-24.04-arm
+            arch: aarch64
+    runs-on: ${{ matrix.runner }}
+    container: ubuntu:22.04
+    steps:
+      - name: Install build tools
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates curl git build-essential python3 dpkg-dev xz-utils
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install Rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain 1.99.0
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+          "$HOME/.cargo/bin/rustup" component add rustfmt clippy
+      - name: Validate version and data
+        env:
+          REF: ${{ github.ref }}
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml)
+          case "$REF" in refs/tags/*) test "$REF" = "refs/tags/v$version" ;; esac
+          echo '867ee5a69cb768ce93431916c33ba13b95d2b29918b7321a27a63ba4979d8e8c  printable.csv' | sha256sum --check
+      - name: Check and build
+        run: |
+          cargo fetch --locked
+          make check PREFIX=/usr
+          make PREFIX=/usr
+      - name: Package
+        run: python3 packaging/build.py --arch '${{ matrix.arch }}'
+      - name: Test installed Debian package and archive
+        run: |
+          set -eu
+          package=$(find dist -name '*.deb')
+          version=$(dpkg-deb -f "$package" Version | sed 's/-1$//')
+          dpkg-deb --info "$package"
+          apt-get install -y "./$package"
+          cd /tmp
+          test "$(ucc 'EM DASH')" = '—'
+          test "$(ucc --version)" = "ucc $version"
+          dpkg --remove ucc
+          cd "$GITHUB_WORKSPACE"
+          mkdir /tmp/ucc-archive
+          tar -xzf dist/ucc-*-linux-*.tar.gz -C /tmp/ucc-archive --strip-components=1
+          cp -a /tmp/ucc-archive/usr/. /usr/
+          cd /tmp
+          test "$(ucc 'EM DASH')" = '—'
+      - name: Test supported distro runtimes
+        # Run separately below, outside this build container, using these assets.
+        run: readelf --version-info target/release/ucc | tail -30
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: linux-${{ matrix.arch }}
+          path: dist/*
+          if-no-files-found: error
+
+  runtime:
+    needs: build
+    strategy:
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+        image: ['debian:12-slim', 'ubuntu:22.04', 'ubuntu:24.04']
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: linux-*
+          path: dist
+          merge-multiple: true
+      - name: Install and remove package on supported distributions
+        env:
+          IMAGE: ${{ matrix.image }}
+        run: |
+          docker run --rm -v "$PWD/dist:/packages:ro" "$IMAGE" sh -ec '
+            arch=$(dpkg --print-architecture)
+            apt-get update
+            apt-get install -y /packages/ucc_*_${arch}.deb
+            version=$(dpkg-query -W -f='"'"'${Version}'"'"' ucc | sed "s/-1$//")
+            cd /tmp
+            test "$(ucc "EM DASH")" = "—"
+            test "$(ucc --version)" = "ucc $version"
+            dpkg --remove ucc
+            test ! -e /usr/bin/ucc
+            test ! -e /usr/share/ucc/printable.csv
+          '
+
+  release:
+    needs: [build, runtime]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: linux-*
+          path: dist
+          merge-multiple: true
+      - name: Assemble release assets
+        run: python3 packaging/assemble.py
+      - name: Build AUR packages and generate metadata
+        run: |
+          mkdir aur
+          tar -xzf dist/ucc-*-aur.tar.gz -C aur --strip-components=1
+          docker run --rm -v "$PWD/aur:/aur" -v "$PWD/dist:/assets:ro" archlinux:base-devel bash -ec '
+            pacman -Syu --noconfirm rust python
+            useradd -m builder
+            mkdir -p /tmp/ucc-sources /tmp/ucc-packages /tmp/ucc-build
+            cp /assets/ucc-*-source.tar.gz /tmp/ucc-sources/ucc-$(sed -n "s/^pkgver=//p" /aur/ucc/PKGBUILD).tar.gz
+            cp /assets/ucc-*-linux-x86_64.tar.gz /tmp/ucc-sources/
+            chown -R builder:builder /tmp/ucc-sources /tmp/ucc-packages /tmp/ucc-build
+            chown -R builder:builder /aur
+            for package in ucc ucc-bin; do
+              su builder -c "cd /aur/$package && makepkg --printsrcinfo > .SRCINFO && SRCDEST=/tmp/ucc-sources PKGDEST=/tmp/ucc-packages BUILDDIR=/tmp/ucc-build makepkg --nodeps --force"
+            done
+          '
+          version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml)
+          mv aur "ucc-$version-aur"
+          tar -czf "dist/ucc-$version-aur.tar.gz" "ucc-$version-aur"
+          cd dist
+          sha256sum *.tar.gz *.deb > SHA256SUMS
+          sha256sum --check SHA256SUMS
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-assets
+          path: dist/*
+      - name: Publish GitHub release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" --verify-tag --draft --title "ucc $TAG" --notes-file packaging/RELEASE-NOTES.md dist/*
+          gh release edit "$TAG" --draft=false

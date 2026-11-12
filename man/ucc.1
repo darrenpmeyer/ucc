@@ -1,0 +1,150 @@
+.TH UCC 1 "2026-11-12" "ucc 0.9.1" "User Commands"
+.SH NAME
+ucc \- emit Unicode characters by name, codepoint, or alias
+.SH SYNOPSIS
+.B ucc
+.RI [ OPTIONS ] " NAME"
+.SH DESCRIPTION
+.B ucc
+looks up a Unicode character and writes it to standard output as UTF-8,
+without a trailing newline.
+Quote names containing spaces so that the shell passes them as one argument.
+.PP
+Lookup is case-insensitive, in this order: exact user aliases, direct
+codepoints, exact character-map names and aliases, then fuzzy matches.
+Codepoints accept hexadecimal (for example, 2014), U+2014, or 0x2014.
+Invalid Unicode scalar values, including surrogates, are rejected.
+Direct codepoints may emit characters outside the printable character map.
+.PP
+Fuzzy lookup accepts substrings or word prefixes in order, with intervening
+words allowed. For example, SUBSCR ONE matches SUBSCRIPT ONE, and LAT CAP A
+matches LATIN CAPITAL LETTER A.
+Word order matters; lookup does not correct typos.
+Names and aliases referring to the same character count as one result.
+.PP
+Without
+.BR \-\-pager ,
+an ambiguous lookup reports up to ten matches on standard error and fails.
+.SH OPTIONS
+.TP
+.BI \-\-charmap " FILE"
+Use an alternative character map CSV.
+The header must contain na, cp, na1, and aliases columns.
+The cp column contains hexadecimal codepoints; aliases contains JSON arrays
+of names. Fuzzy lookup requires a seekable file.
+.TP
+.BI \-\-aliases " FILE"
+Use an alternative alias CSV instead of the default user alias file.
+An explicitly specified file must exist.
+.TP
+.BI \-\-combine " NAME"
+Append another character using the same lookup rules as the main argument.
+Repeat this option to append more characters in order.
+Characters may be ordinary letters or combining marks; no Unicode
+normalization or rearrangement is performed.
+Rendering depends on the terminal and font.
+.TP
+.B \-\-pager
+List all matching characters on standard output, one per line, in the form
+<char> (<name>). Uses the same lookup precedence as ordinary lookup.
+Does not start a pager; pipe the output to
+.BR less (1)
+or another pager.
+Cannot be combined with
+.BR \-\-combine .
+.TP
+.BR \-h ", " \-\-help
+Show help and exit.
+.TP
+.BR \-V ", " \-\-version
+Show the version and exit.
+.TP
+.B \-\-
+End option processing. The remaining argument is treated as NAME even if it
+begins with a hyphen.
+.SH ALIASES
+Alias files are UTF-8 CSV files without a header, with two fields per row:
+name and value. A value may be a literal Unicode character or a hexadecimal
+codepoint. A single Unicode scalar value is always interpreted as a literal;
+use U+0041 to specify the codepoint rather than the literal A.
+Names are case-insensitive; later duplicate aliases replace earlier ones.
+Quote CSV fields containing commas or quotes.
+.PP
+Example alias file:
+.PP
+.nf
+dash,2014
+letter,A
+accent,U+0301
+.fi
+.PP
+A missing default alias file is ignored. Invalid alias files are errors.
+.SH FILES
+.TP
+.I $XDG_CONFIG_HOME/ucc/aliases.csv
+Default user aliases when XDG_CONFIG_HOME is nonempty.
+.TP
+.I $HOME/.config/ucc/aliases.csv
+Default user aliases when XDG_CONFIG_HOME is unset or empty.
+.TP
+.I /usr/local/share/ucc/printable.csv
+Default character map for a source installation.
+Release packages use
+.IR /usr/share/ucc/printable.csv .
+The default directory is compiled into the binary and may differ for custom
+installations. Use
+.B \-\-charmap
+to override it at runtime.
+.SH ENVIRONMENT
+.TP
+.BR XDG_CONFIG_HOME ", " HOME
+Determine the default alias path as described under FILES.
+.PP
+UCC_DATADIR selects the default character-map directory at build time;
+setting it at runtime has no effect.
+.SH EXIT STATUS
+.TP
+.B 0
+Successful character output, match listing, help, or version request.
+.TP
+.B 1
+Invalid arguments, a missing or ambiguous character, invalid input data,
+or an input/output error. Diagnostics are written to standard error.
+A failed character lookup emits no partial character sequence.
+With
+.BR \-\-pager ,
+multiple matches are successful, but no matches is an error.
+.SH EXAMPLES
+Emit an em dash:
+.PP
+.nf
+ucc 'EM DASH'
+.fi
+.PP
+Use a codepoint in shell output, adding a newline with printf:
+.PP
+.nf
+printf '%s\en' "$(ucc U+2192)"
+.fi
+.PP
+Append a combining accent:
+.PP
+.nf
+ucc 'LATIN SMALL LETTER E' \e
+  \-\-combine 'COMBINING ACUTE ACCENT'
+.fi
+.PP
+Browse matching arrows:
+.PP
+.nf
+ucc ARROW \-\-pager | less
+.fi
+.PP
+Use the example alias file:
+.PP
+.nf
+ucc \-\-aliases ./aliases.csv letter \-\-combine accent
+.fi
+.SH SEE ALSO
+.BR less (1),
+.BR printf (1)

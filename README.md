@@ -1,98 +1,201 @@
 # ucc
 
-The **U**ni**c**ode **C**haracter emitter - emits a unicode character by
+The **U**ni**c**ode **C**haracter emitter `ucc` emits a Unicode character by
 name, codepoint, or alias.
 
 ```sh
 printf 'H%sO\n' "$(ucc 'SUBSCRIPT TWO')"   # H₂O
 ```
 
-## Release downloads
+## Installing
 
-Download packages from [GitHub Releases](https://github.com/darrenpmeyer/ucc/releases).
-Linux x86-64 (`amd64`) and ARM64 (`aarch64`, Debian `arm64`) are supported.
-ARM64 needs a 64-bit OS; 32-bit Raspberry Pi OS is not supported by these builds.
-Packages target glibc 2.35 or newer, including Debian 12+ and Ubuntu 22.04+.
-Private repository downloads require GitHub access.
+GitHub Releases provide downloads for Linux x86-64 and ARM64 machines:
 
-Verify downloads with `sha256sum --check SHA256SUMS` (download all assets listed,
-or select the lines for your downloaded files). On Debian/Ubuntu:
+- `.deb` releases for Debian 12+ / Ubuntu 22.04+
+- Arch/AUR recipes `ucc` (build from sources) and `ucc-bin` (prebuilt binaries)
+- `.tar.gz` archives of prebuilt binaries for other compatible Linux distributions
+
+You can also build from sources with `make` and install globally with
+`sudo make install`.
+
+- [Downloading](#downloading)
+- [Installing on Debian / Ubuntu](#installing-on-debian--ubuntu)
+- [Installing with AUR recipes (Arch / Manjaro)](#installing-with-aur-recipes-arch--manjaro)
+- [Installing binaries without a package manager](#installing-binaries-without-a-package-manager)
+- [Installing from sources](#installing-from-sources)
+
+### Downloading
+
+Download packages from
+[GitHub Releases](https://github.com/darrenpmeyer/ucc/releases). Linux x86-64
+(`amd64`) and ARM64 (`aarch64`, Debian `arm64`) are supported. ARM64 needs a
+64-bit OS; 32-bit Raspberry Pi OS is not supported by these builds. Packages
+target glibc 2.35 or newer, including Debian 12+ and Ubuntu 22.04+.
+
+Verify downloads with `sha256sum --check SHA256SUMS` (download all assets
+listed, or select the lines for your downloaded files).
+
+### Installing on Debian / Ubuntu
+
+Download the `.deb` package for your architecture from
+[GitHub Releases](https://github.com/darrenpmeyer/ucc/releases), then install
+with:
 
 ```sh
-sudo apt install ./ucc_0.9.0-1_amd64.deb  # use arm64 on ARM64
-sudo apt remove ucc                     # uninstall
+sudo apt install ./ucc_0.9.1-1_amd64.deb  # use arm64 on ARM64
+sudo apt remove ucc                       # uninstall
 ```
 
-Binary archives contain a filesystem tree under `usr/`, with the map path compiled
-as `/usr/share/ucc`. Extract the matching archive, then install its contents:
+### Installing with AUR recipes (Arch / Manjaro)
+
+Download `ucc-0.9.1-aur.tar.gz` from
+[GitHub Releases](https://github.com/darrenpmeyer/ucc/releases). It contains two
+recipes, each with a `PKGBUILD` and `.SRCINFO`:
+
+- `ucc-bin` installs prebuilt binaries for `x86_64` or `aarch64`. `makepkg`
+  automatically downloads the release archive for your architecture and verifies
+  its SHA-256 checksum.
+- `ucc` builds from source on either architecture. `makepkg -si` installs the
+  required build dependencies, including Rust/Cargo and Python.
+
+Install the Arch build tools, then extract the recipe bundle (replace `0.9.1`
+with your downloaded version):
 
 ```sh
-tar -xzf ucc-0.9.0-linux-x86_64.tar.gz
-sudo cp -a ucc-0.9.0-linux-x86_64/usr/. /usr/
+sudo pacman -S --needed base-devel
+tar -xzf ucc-0.9.1-aur.tar.gz
+cd ucc-0.9.1-aur/ucc-bin       # use ucc instead to build from source
+```
+
+Review the `PKGBUILD`, then run as your normal user:
+
+```sh
+makepkg -si
+ucc 'EM DASH'
+```
+
+Choose one recipe: both provide the `ucc` command and cannot coexist. To
+uninstall, run `sudo pacman -R ucc-bin` (or `sudo pacman -R ucc` for the source
+package). These instructions use the recipes bundled with GitHub Releases;
+releases do not automatically submit packages to the AUR.
+
+### Installing binaries without a package manager
+
+Binary archives contain a filesystem tree under `usr/`, with the map path
+compiled as `/usr/share/ucc`. Extract the matching archive, then install its
+contents:
+
+```sh
+tar -xzf ucc-0.9.1-linux-x86_64.tar.gz
+sudo cp -a ucc-0.9.1-linux-x86_64/usr/. /usr/
 ucc 'EM DASH'
 ```
 
 To remove a manually installed archive, remove `/usr/bin/ucc`,
-`/usr/share/ucc/printable.csv`, and `/usr/share/doc/ucc/`. Prefer the `.deb` or
+`/usr/share/ucc/printable.csv`, `/usr/share/man/man1/ucc.1`, and
+`/usr/share/doc/ucc/`. Prefer the `.deb` or
 Arch packaging when available so your package manager tracks these files.
 
-The `ucc-<version>-aur.tar.gz` release asset contains separate `ucc` and `ucc-bin`
-recipes with `.SRCINFO`. Extract it, enter one recipe directory, and run
-`makepkg -si`. The source recipe compiles locally; the binary recipe downloads
-this release's matching architecture. Both install `ucc` and cannot coexist.
-These are prepared recipes, not automatic submissions to AUR. Public AUR use
-requires public release downloads.
+### Installing from sources
 
-## License and character data
-
-The project code is [MIT licensed](LICENSE). The generated Unicode character map
-is covered by [Unicode License V3](LICENSE-UNICODE); see [NOTICE](NOTICE) and
-[data provenance](DATA-PROVENANCE.md). Binary packages also include dependency
-license notices under `/usr/share/doc/ucc/third-party/`.
-
-## Build and install
-
-Requires Rust and Cargo (edition 2024).
+Requires Rust and Cargo with edition 2024 support, Make, and a C toolchain
+for linking. The character map is included in the repository; a normal build
+does not require Python or the Unicode XML.
+Run these commands from the repository root:
 
 ```sh
-cargo build --release
-target/release/ucc --charmap ./printable.csv 'EM DASH'
+make                         # build as your normal user
+sudo make install            # install the binary and character map
+ucc 'EM DASH'
 ```
 
-Use the Makefile to install both the binary and its character map:
+This installs under `/usr/local`. `make install` uses the existing release
+binary, so always build before installing. To uninstall, run
+`sudo make uninstall` from the repository root.
+
+For a user-local installation (ensure `$HOME/.local/bin` is on your `PATH`):
 
 ```sh
-make                         # release build
-make check                   # formatting, Clippy, Rust and Python tests
-sudo make install
-sudo make uninstall
+make PREFIX="$HOME/.local"
+make install PREFIX="$HOME/.local"
 ```
 
-`make install` copies the existing release binary and character map without
-building. Run `make` as your normal user before `sudo make install`.
-For a user-local installation, run `make PREFIX="$HOME/.local"` followed by
-`make install PREFIX="$HOME/.local"`.
+Use the same `PREFIX` when building, installing, and uninstalling: the character
+map's installed location is compiled into the binary. See the
+[contributor guide](CONTRIBUTING.md) for development setup, checks, and advanced
+build and packaging options.
 
-`make install` defaults to `/usr/local/bin/ucc` and
-`/usr/local/share/ucc/printable.csv`. `PREFIX` changes both paths; `BINDIR`
-overrides the binary directory and `DATADIR` overrides the map directory
-(default `$(PREFIX)/share/ucc`). The map directory is compiled into the binary,
-so use the same settings for building and installing. `DESTDIR` supports staged
-packaging without changing the compiled runtime path. For example,
-`make PREFIX=/usr` followed by
-`make install DESTDIR=/tmp/ucc-package PREFIX=/usr` stages the binary under
-`/tmp/ucc-package/usr/bin` and the map under
-`/tmp/ucc-package/usr/share/ucc`. Run `make help` for all targets, including `debug`,
-`fmt`, `clean`, and `charmap` (explicitly regenerates the character map).
+## Usage
 
-The default character map is read from the installed share directory at runtime,
-so the installed binary works from any directory. With a direct Cargo build,
-the default is `/usr/local/share/ucc/printable.csv`; set `UCC_DATADIR` at build
-time to change the directory. For development without installing, pass
-`--charmap ./printable.csv`. The map is not embedded in the executable. Output has no trailing newline. Errors and ambiguous
-matches go to STDERR with exit status 1 (except match listings with `--pager`); no partial character sequence is emitted.
+Run `man ucc` for the installed command reference or `ucc --help` for a quick
+option summary.
 
-## Examples
+- [Arguments](#arguments)
+- [Lookup and aliases](#lookup-and-aliases)
+- [Examples and recipes](#examples-and-recipes)
+
+### Arguments
+
+```text
+ucc [OPTIONS] NAME
+```
+
+Output is UTF-8 with no trailing newline. Errors, including ambiguous lookups,
+go to STDERR with exit status 1; a failed lookup emits no partial character
+sequence to STDOUT.
+
+- `--pager` lists all matching characters as `<char> (<name>)`, one per line, to
+  STDOUT and exits successfully when matches are found. It uses the same lookup
+  precedence and can be piped to `less`: `ucc LETTER --pager | less`. It cannot
+  be combined with `--combine`.
+- `--charmap <FILE>` uses an alternative character map with the same CSV format
+  as `printable.csv`.
+- `--combine <NAME>` appends another character, including an ordinary letter or
+  a combining mark. Repeat it to append more characters in order; rendering
+  depends on the terminal and font.
+- `--aliases <FILE>` uses an alternative user alias file (default
+  `~/.config/ucc/aliases.csv` or equivalent XDG config path).
+- `-h`, `--help` shows command-line help.
+- `-V`, `--version` shows the version.
+
+### Lookup and aliases
+
+Codepoints accept hexadecimal (`2014`), `U+2014`, or `0x2014`. Invalid Unicode
+scalar values, including surrogates, are rejected. Direct codepoint lookup can
+emit characters outside the printable map. Exact user aliases take precedence,
+then codepoints, then exact map names and aliases, then fuzzy matches. Fuzzy
+lookup is case-insensitive and accepts either a substring or word prefixes in
+order, allowing intervening words. For example, `SUBSCR ONE` matches
+`SUBSCRIPT ONE` and its alias `SUBSCRIPT DIGIT ONE`; both refer to `₁`.
+`LAT CAP A` can match `LATIN CAPITAL LETTER A`. Word order matters; this does
+not perform typo correction. The same rules apply to user aliases, `--combine`,
+and `--pager`. Matches referring to the same character count as one result.
+
+The default alias path is `$XDG_CONFIG_HOME/ucc/aliases.csv`, falling back to
+`$HOME/.config/ucc/aliases.csv`. A missing default file is ignored; an
+explicitly specified missing file is an error. Alias files have no header:
+
+```csv
+dash,2014
+smile,😀
+letter,A
+accent,U+0301
+```
+
+A single scalar value is treated as a literal character (including `A` or `1`);
+use a prefix such as `U+0041` to disambiguate codepoints. Names are
+case-insensitive; later duplicate aliases replace earlier ones. Quote CSV fields
+containing commas or quotes. For example:
+
+```sh
+ucc letter --combine accent   # emits A followed by COMBINING ACUTE ACCENT
+```
+
+Combining arguments use the same lookup rules and are appended in argument
+order, without normalization or rearrangement. They are not restricted to
+Unicode marks, so aliases and other character sequences work as well.
+
+### Examples and recipes
 
 Look up a character by name, codepoint, or an abbreviated name. `printf` adds a
 newline here because `ucc` itself emits none:
@@ -145,111 +248,14 @@ printf '%s\n' "$(ucc --aliases /tmp/ucc-example-aliases.csv U+0065 \
   --combine accent)"                                            # é
 ```
 
-## Explanation
+## Licenses for code and character data
 
-`ucc` takes a character "name" as an argument; this argument is case-insensitive. It then searches `printable.csv` to determine the code point of the character:
+The project code is [MIT licensed](LICENSE). The generated Unicode character map
+is covered by [Unicode License V3](LICENSE-UNICODE); see [NOTICE](NOTICE) and
+[data provenance](DATA-PROVENANCE.md). Binary packages also include dependency
+license notices under `/usr/share/doc/ucc/third-party/`.
 
-- exact match of name prints the unicode character for that codepoint to STDOUT
-- a fuzzy match with only one distinct character also prints that char to STDOUT
-- multiple possible matches prints the first 10 options to STDERR in the form `<char> (<name>)` and exits non-zero; additional matches are summarized as `.. and N more matches (use --pager) for more`
+## Contributing
 
-Users can define their own aliases in homedir config directory, using a simple CSV file in the form `<name>,<cp or char>` ; the user can supply a unicode codepoint or a literal character to use
-
-`ucc` emits utf-8 encoded chars in all cases.
-
-## Arguments
-
-- `--pager` lists all matching characters as `<char> (<name>)`, one per line, to STDOUT and exits successfully. It uses the same lookup precedence and can be piped to `less`: `ucc LETTER --pager | less`. It cannot be combined with `--combine`.
-- `--charmap` points to an alternative file with the same format as `printable.csv`
-- `--combine <NAME>` appends a combining character after the symbol named; so `ucc EXAMPLE --combine 'EXAMPLE 2'` combines EXAMPLE and EXAMPLE 2 characters. `--combine` can be repeated. Unicode imposes no fixed maximum sequence length; rendering depends on the terminal and font.
-- `--aliases` points to an alternative user alias file (default `~/.config/ucc/aliases.csv` or equivalent XDG config path)
-
-## Lookup and aliases
-
-Codepoints accept hexadecimal (`2014`), `U+2014`, or `0x2014`. Invalid Unicode
-scalar values, including surrogates, are rejected. Direct codepoint lookup can
-emit characters outside the printable map. Exact user aliases take precedence,
-then codepoints, then exact map names and aliases, then fuzzy matches.
-Fuzzy lookup is case-insensitive and accepts either a substring or word prefixes
-in order, allowing intervening words. For example, `SUBSCR ONE` matches
-`SUBSCRIPT ONE` and its alias `SUBSCRIPT DIGIT ONE`; both refer to `₁`.
-`LAT CAP A` can match `LATIN CAPITAL LETTER A`. Word order matters; this does
-not perform typo correction. The same rules apply to user aliases, `--combine`,
-and `--pager`.
-Matches referring to the same character count as one result.
-
-Lookup batches the main argument and all `--combine` arguments. Exact user
-aliases and direct codepoints are resolved without opening the character map.
-Remaining names share one streaming CSV scan for exact matches; only names
-without an exact match enter a second, shared scan for fuzzy matches. Repeated
-queries reuse their results, while output follows the original argument order.
-The full map is never retained in memory: the scanner keeps the current record
-and matching results. Broad fuzzy searches can retain many results, especially
-with `--pager`. Fuzzy lookup pays for two scans; exact lookup pays for one.
-The map is fully validated whenever it is scanned, but unused maps are not
-opened or validated. Fuzzy lookup requires a seekable character-map file.
-
-The default alias path is `$XDG_CONFIG_HOME/ucc/aliases.csv`, falling back to
-`$HOME/.config/ucc/aliases.csv`. A missing default file is ignored; an explicitly
-specified missing file is an error. Alias files have no header:
-
-```csv
-dash,2014
-smile,😀
-letter,A
-accent,U+0301
-```
-
-A single scalar value is treated as a literal character (including `A` or `1`);
-use a prefix such as `U+0041` to disambiguate codepoints. Names are
-case-insensitive; later duplicate aliases replace earlier ones. Quote CSV fields
-containing commas or quotes. For example:
-
-```sh
-ucc letter --combine accent   # emits A followed by COMBINING ACUTE ACCENT
-```
-
-Combining arguments use the same lookup rules and are appended in argument order,
-without normalization or rearrangement. They are not restricted to Unicode marks,
-so aliases and other character sequences work as well.
-
-Run checks with `cargo test` and `python3 -m unittest discover -s tests`.
-
-## Extract printable character definitions
-
-The printable char database can be regenerated from the [versioned Unicode definition XML archive](https://www.unicode.org/Public/18.0.0/ucdxml/). Extract the `ucd.all.flat.xml` to the repo directory and run:
-
-```sh
-python3 extract_printable.py ucd.all.flat.xml printable.csv
-```
-
-The standalone script uses only the Python standard library and streams the XML.
-Both paths are optional and default to the paths shown above.
-The CSV columns are `na`, `cp` (uppercase hexadecimal), `na1`, and `aliases`.
-`aliases` is a JSON array combining nonempty `na1` and nested `name-alias` values,
-with duplicates removed. Algorithmic names containing `#` expand to the codepoint.
-
-Printable characters are categories L (letters), M (marks), N (numbers),
-P (punctuation), and S (symbols), plus ASCII space. Controls, format characters,
-surrogates, private-use characters, unassigned codepoints, and other separators
-are excluded. The categories come from the XML, independent of Python's bundled
-Unicode version. Combining marks are included; printability does not guarantee a
-visible standalone glyph or font support.
-
-
-
-## Maintainer release process
-
-`.github/workflows/release.yml` builds and tests x86-64 and ARM64 natively in
-Ubuntu 22.04 containers, packages `.deb` files and binary archives, tests Debian
-and Ubuntu installations, and assembles source and AUR recipe archives plus
-checksums. Branch/PR/manual runs upload Actions artifacts without publishing.
-A `v<version>` tag must match `Cargo.toml`; after all checks pass, its run creates
-a draft GitHub Release, uploads all assets, then publishes it.
-
-For a release, update the manifest, lockfile, examples and release notes, commit,
-and push the commit and its version tag (for example `v0.9.0`). GitHub Actions
-needs repository write permission for the release job. Releases stay subject to
-the repository's visibility. The workflow does not change visibility or submit
-to AUR/APT repositories. Use the generated AUR recipes after assets are final;
-do not replace published archives without updating their checksums.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, tests, lookup
+internals, character-map regeneration, and the maintainer release process.

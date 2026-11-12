@@ -37,7 +37,7 @@ check:
 	$(MAKE) lint
 	$(MAKE) test
 
-install: build
+install:
 	install -d "$(DESTDIR)$(BINDIR)" "$(DESTDIR)$(DATADIR)"
 	install -m 755 "$(CARGO_TARGET_DIR)/release/ucc" "$(DESTDIR)$(BINDIR)/ucc"
 	install -m 644 printable.csv "$(DESTDIR)$(DATADIR)/printable.csv"
@@ -60,7 +60,7 @@ help:
 	  'make lint     Run Clippy with warnings as errors' \
 	  'make fmt      Format Rust source' \
 	  'make check    Check formatting, lint, and run tests' \
-	  'make install  Install binary and map under PREFIX (default: /usr/local)' \
+	  'make install  Install the prebuilt binary and map under PREFIX (default: /usr/local)' \
 	  'make uninstall Remove the installed binary and character map' \
 	  'make clean    Remove Cargo build artifacts' \
 	  'make charmap  Regenerate printable.csv from the Unicode XML' \

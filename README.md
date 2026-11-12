@@ -3,6 +3,10 @@
 The **U**ni**c**ode **C**haracter emitter - emits a unicode character by
 name, codepoint, or alias.
 
+```sh
+printf 'H%sO\n' "$(ucc 'SUBSCRIPT TWO')"   # H₂O
+```
+
 ## Build and install
 
 Requires Rust and Cargo (edition 2024).
@@ -17,9 +21,14 @@ Use the Makefile to install both the binary and its character map:
 ```sh
 make                         # release build
 make check                   # formatting, Clippy, Rust and Python tests
-make install PREFIX="$HOME/.local"
-make uninstall PREFIX="$HOME/.local"
+sudo make install
+sudo make uninstall
 ```
+
+`make install` copies the existing release binary and character map without
+building. Run `make` as your normal user before `sudo make install`.
+For a user-local installation, run `make PREFIX="$HOME/.local"` followed by
+`make install PREFIX="$HOME/.local"`.
 
 `make install` defaults to `/usr/local/bin/ucc` and
 `/usr/local/share/ucc/printable.csv`. `PREFIX` changes both paths; `BINDIR`
@@ -27,6 +36,7 @@ overrides the binary directory and `DATADIR` overrides the map directory
 (default `$(PREFIX)/share/ucc`). The map directory is compiled into the binary,
 so use the same settings for building and installing. `DESTDIR` supports staged
 packaging without changing the compiled runtime path. For example,
+`make PREFIX=/usr` followed by
 `make install DESTDIR=/tmp/ucc-package PREFIX=/usr` stages the binary under
 `/tmp/ucc-package/usr/bin` and the map under
 `/tmp/ucc-package/usr/share/ucc`. Run `make help` for all targets, including `debug`,

@@ -1,0 +1,10 @@
+.*
+!.gitignore
+*.tmp
+*.bak
+
+AGENTS.md
+CLAUDE.md
+/target/
+
+ucd.*.xml

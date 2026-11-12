@@ -1,0 +1,8 @@
+[package]
+name = "ucc"
+version = "0.1.0"
+edition = "2024"
+description = "Emit Unicode characters by name, codepoint, or alias"
+
+[dependencies]
+serde_json = "1"

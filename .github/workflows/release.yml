@@ -57,7 +57,8 @@ jobs:
           package=$(find dist -name '*.deb')
           version=$(dpkg-deb -f "$package" Version | sed 's/-1$//')
           dpkg-deb --info "$package"
-          apt-get install -y "./$package"
+          # Minimal container images exclude man pages unless explicitly included.
+          apt-get -o "Dpkg::Options::=--path-include=/usr/share/man/*" install -y "./$package"
           cd /tmp
           test "$(ucc 'EM DASH')" = '—'
           test "$(ucc --version)" = "ucc $version"
@@ -100,7 +101,8 @@ jobs:
           docker run --rm -v "$PWD/dist:/packages:ro" "$IMAGE" sh -ec '
             arch=$(dpkg --print-architecture)
             apt-get update
-            apt-get install -y /packages/ucc_*_${arch}.deb
+            # Preserve man pages despite minimal container package filters.
+            apt-get -o "Dpkg::Options::=--path-include=/usr/share/man/*" install -y /packages/ucc_*_${arch}.deb
             version=$(dpkg-query -W -f='"'"'${Version}'"'"' ucc | sed "s/-1$//")
             cd /tmp
             test "$(ucc "EM DASH")" = "—"
